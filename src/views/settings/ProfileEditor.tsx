@@ -1,14 +1,17 @@
 import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { SpriteSet, SPRITE_SETS, filterSpriteSet, renderSpriteSet } from './SpriteSets';
+import { filterPokemonOption, renderPokemonOption } from './PokemonSelector';
 import { Select } from '@blueprintjs/select';
 import { FormGroup, Classes, MenuItem, Button, ControlGroup, Popover, Switch } from '@blueprintjs/core';
 import { Table, Column, EditableCell, Cell } from '@blueprintjs/table';
 import { Profile, TrackerStateDefinition } from '../../stores/profiles/types';
-import { POKEMON_SPRITE_BASE_URL } from '../../utils/Dex';
+import { Pokemon, POKEMON_SPRITE_BASE_URL } from '../../utils/Dex';
 import { BlockPicker, ColorResult } from 'react-color';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import TEMP_DATA_SET from '../../../assets/datasets/gen-1.json';
+import { filterStateOption, renderStateOption } from './StateOptionSelector';
 
 const PROFILE_NAME_HELP_TEXT = 'The name of the profile. The profile name must be unique from the rest of your profiles.';
 const SPRITE_SET_HELP_TEXT = <>
@@ -20,6 +23,8 @@ const POKEMON_TABLE_HELP_TEXT_2 = 'Pokemon are displayed in the order they are l
 const POKEMON_TABLE_HELP_TEXT_3 = 'If more than one Pokemon variant use the same Dex number, such as Oricorio, then you can either give the other variants an unused Dex number or lay down and cry.';
 
 const SpriteSetSelector = Select.ofType<SpriteSet>();
+const PokemonSelector = Select.ofType<Pokemon>();
+const DefaultStateSelector = Select.ofType<TrackerStateDefinition>();
 
 interface ProfileEditorProps {
   profile: Profile;
@@ -137,6 +142,27 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
     }
   }, [stateCellErrors, editedProfile]);
 
+  const handleSelectPokemonOption = useCallback((rowIndex: number, pokemon: Pokemon) => {
+    // setEditedProfile({
+    //   ...editedProfile,
+    //   spriteSet,
+    // });
+  }, []);
+
+  const handleSetPokemonSprite = useCallback((rowIndex: number, value: string) => {
+    // setEditedProfile({
+    //   ...editedProfile,
+    //   spriteSet,
+    // });
+  }, []);
+
+  const handleSelectStateOption = useCallback((rowIndex: number, state: TrackerStateDefinition) => {
+    // setEditedProfile({
+    //   ...editedProfile,
+    //   spriteSet,
+    // });
+  }, []);
+
   console.log(editedProfile);
 
   const renderStateNameCell = useCallback((rowIndex: number, colIndex: number) => {
@@ -195,6 +221,57 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
     </Cell>
   ), [editedProfile.states]);
 
+  const renderDexNoCell = useCallback((rowIndex: number) => (
+    <Cell>
+      {editedProfile.pokemon[rowIndex].id}
+    </Cell>
+  ), [editedProfile.pokemon]);
+
+  const renderPokemonOptionCell = useCallback((rowIndex: number) => (
+    <SelectorCell>
+      <PokemonSelector
+        items={TEMP_DATA_SET}
+        itemPredicate={filterPokemonOption}
+        itemRenderer={renderPokemonOption}
+        noResults={<MenuItem disabled={true} text="No results." />}
+        onItemSelect={option => handleSelectPokemonOption(rowIndex, option)}
+        popoverProps={{ minimal: true }}
+      >
+        <Button
+          rightIcon="caret-down"
+          text={editedProfile.pokemon[rowIndex].name ?? "(No selection)"}
+          fill
+        />
+      </PokemonSelector>
+    </SelectorCell>
+  ), [editedProfile.pokemon]);
+
+  const renderPokemonSpriteCell = useCallback((rowIndex: number, colIndex: number) => (
+    <EditableCell
+      value={editedProfile.pokemon[rowIndex].sprite}
+      onConfirm={newValue => handleSetPokemonSprite(rowIndex, newValue)}
+    />
+  ), [editedProfile.pokemon, handleSetPokemonSprite]);
+
+  const renderDefaultStateCell = useCallback((rowIndex: number) => (
+    <SelectorCell>
+      <DefaultStateSelector
+        items={editedProfile.states}
+        itemPredicate={filterStateOption}
+        itemRenderer={renderStateOption}
+        noResults={<MenuItem disabled={true} text="No results." />}
+        onItemSelect={option => handleSelectStateOption(rowIndex, option)}
+        popoverProps={{ minimal: true }}
+      >
+        <Button
+          rightIcon="caret-down"
+          text={editedProfile.pokemon[rowIndex].defaultState ?? editedProfile.states.find(state => state.isPrimary)?.name}
+          fill
+        />
+      </DefaultStateSelector>
+    </SelectorCell>
+  ), [editedProfile]);
+
   return (
     <div>
       <FormGroup label="Profile Name" labelFor="profile-name" helperText={PROFILE_NAME_HELP_TEXT}>
@@ -246,11 +323,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
       </FormGroup>
 
       <FormGroup label="Pokemon">
-        <Table numRows={2} enableRowReordering>
-          <Column name="Dex No." />
-          <Column name="Name" />
-          <Column name="Sprite URL (optional)" />
-          <Column name="Default state" />
+        <Table numRows={editedProfile.pokemon.length} enableRowReordering>
+          <Column name="Dex No." cellRenderer={renderDexNoCell} />
+          <Column name="Name" cellRenderer={renderPokemonOptionCell} />
+          <Column name="Sprite URL (optional)" cellRenderer={renderPokemonSpriteCell} />
+          <Column name="Default state" cellRenderer={renderDefaultStateCell} />
         </Table>
         
         <div className={Classes.FORM_HELPER_TEXT}>{POKEMON_TABLE_HELP_TEXT_1}</div>
@@ -288,4 +365,31 @@ const ColorCell = styled.div<{ color: string }>`
   width: 100%;
   height: 100%;
   background-color: ${props => props.color};
+`;
+
+const SelectorCell = styled(Cell)`
+  display: relative;
+  padding: 0;
+
+  & .bp3-popover-target {
+    width: 100%;
+    height: 100%;
+  }
+  
+  & .bp3-button {
+    height: 100%;
+    min-height: 0;
+    border: none;
+    background-image: none;
+    box-shadow: none;
+    background-color: transparent;
+    padding: 0 0.25rem;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    border-radius: 0;
+
+    &:not([class*="bp3-intent-"]):hover {
+      box-shadow: none;
+    }
+  }
 `;
