@@ -1,0 +1,119 @@
+{
+  "name": "diplomat",
+  "productName": "diplomat",
+  "version": "1.0.0",
+  "description": "My Electron application description",
+  "main": ".webpack/main",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
+  },
+  "keywords": [],
+  "author": {
+    "name": "May Roussel",
+    "email": "may@maybreak.com"
+  },
+  "license": "MIT",
+  "config": {
+    "forge": {
+      "packagerConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "diplomat"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ],
+      "plugins": [
+        [
+          "@electron-forge/plugin-webpack",
+          {
+            "mainConfig": "./webpack.main.config.js",
+            "renderer": {
+              "config": "./webpack.renderer.config.js",
+              "entryPoints": [
+                {
+                  "html": "./assets/html/tracker.html",
+                  "js": "./src/renderer.tsx",
+                  "name": "main_window"
+                },
+                {
+                  "html": "./assets/html/count.html",
+                  "js": "./src/renderer.tsx",
+                  "name": "count_window"
+                },
+                {
+                  "html": "./assets/html/settings.html",
+                  "js": "./src/renderer.tsx",
+                  "name": "settings_window"
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "6.0.0-beta.53",
+    "@electron-forge/maker-deb": "6.0.0-beta.53",
+    "@electron-forge/maker-rpm": "6.0.0-beta.53",
+    "@electron-forge/maker-squirrel": "6.0.0-beta.53",
+    "@electron-forge/maker-zip": "6.0.0-beta.53",
+    "@electron-forge/plugin-webpack": "6.0.0-beta.53",
+    "@marshallofsound/webpack-asset-relocator-loader": "^0.5.0",
+    "@types/electron-json-storage": "^4.0.0",
+    "@types/pify": "^3.0.2",
+    "@types/react-color": "^3.0.4",
+    "@types/react-redux": "^7.1.9",
+    "@types/styled-components": "^5.1.2",
+    "@types/webpack-env": "^1.15.2",
+    "css-loader": "^4.2.1",
+    "electron": "10.1.0",
+    "fork-ts-checker-webpack-plugin": "^5.1.0",
+    "node-loader": "^1.0.1",
+    "style-loader": "^1.2.1",
+    "ts-loader": "^8.0.3",
+    "typescript": "^4.0.2"
+  },
+  "dependencies": {
+    "@blueprintjs/core": "^3.31.0",
+    "@blueprintjs/select": "^3.13.7",
+    "@blueprintjs/table": "^3.8.13",
+    "@fortawesome/fontawesome-svg-core": "^1.2.30",
+    "@fortawesome/free-regular-svg-icons": "^5.14.0",
+    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@fortawesome/react-fontawesome": "^0.1.11",
+    "@types/react": "^16.9.49",
+    "@types/react-dom": "^16.9.8",
+    "deepmerge": "^4.2.2",
+    "electron-json-storage": "^4.2.0",
+    "electron-redux": "^1.5.4",
+    "electron-squirrel-startup": "^1.0.0",
+    "pify": "^5.0.0",
+    "react": "^16.13.1",
+    "react-color": "^2.18.1",
+    "react-dom": "^16.13.1",
+    "react-redux": "^7.2.1",
+    "redux": "^4.0.5",
+    "styled-components": "^5.1.1"
+  }
+}
