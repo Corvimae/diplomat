@@ -1,17 +1,22 @@
 import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
-import { SpriteSet, SPRITE_SETS, filterSpriteSet, renderSpriteSet } from './SpriteSets';
-import { filterPokemonOption, renderPokemonOption } from './PokemonSelector';
-import { Select } from '@blueprintjs/select';
-import { FormGroup, Classes, MenuItem, Button, ControlGroup, Popover, Switch } from '@blueprintjs/core';
-import { Table, Column, EditableCell, Cell } from '@blueprintjs/table';
-import { Profile, TrackerStateDefinition } from '../../stores/profiles/types';
-import { Pokemon, POKEMON_SPRITE_BASE_URL } from '../../utils/Dex';
+import fs from 'fs';
+import path from 'path';
+import { remote } from 'electron';
 import { BlockPicker, ColorResult } from 'react-color';
+import { Select } from '@blueprintjs/select';
+import { Table, Column, EditableCell, Cell } from '@blueprintjs/table';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { Profile, TrackerStateDefinition } from '../../stores/profiles/types';
+import { SpriteSet, SPRITE_SETS, filterSpriteSet, renderSpriteSet } from './SpriteSets';
+import { filterPokemonOption, renderPokemonOption } from './PokemonSelector';
+import { FormGroup, Classes, MenuItem, Button, ControlGroup, Popover, Switch } from '@blueprintjs/core';
+import { Pokemon, POKEMON_SPRITE_BASE_URL } from '../../utils/Dex';
 import TEMP_DATA_SET from '../../../assets/datasets/gen-1.json';
 import { filterStateOption, renderStateOption } from './StateOptionSelector';
+import { useDispatch } from 'react-redux';
+import { deleteProfile, saveProfile } from '../../stores/profiles/actions';
 
 const PROFILE_NAME_HELP_TEXT = 'The name of the profile. The profile name must be unique from the rest of your profiles.';
 const SPRITE_SET_HELP_TEXT = <>
@@ -28,11 +33,17 @@ const DefaultStateSelector = Select.ofType<TrackerStateDefinition>();
 
 interface ProfileEditorProps {
   profile: Profile;
+  setSelectedProfileName: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
+function normalizeFilename(profileName: string) {
+  return `${profileName.toLowerCase().replace(/ \./g, '-')}.json`;
+}
+
+export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, setSelectedProfileName }) => {
   const [editedProfile, setEditedProfile] = useState<Profile>(profile);
   const [stateCellErrors, setStateCellErrors] = useState<Record<string, string | null>>({});
+  const dispatch = useDispatch();
 
   const handleChangeProfileName = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setEditedProfile({
@@ -143,28 +154,72 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
   }, [stateCellErrors, editedProfile]);
 
   const handleSelectPokemonOption = useCallback((rowIndex: number, pokemon: Pokemon) => {
-    // setEditedProfile({
-    //   ...editedProfile,
-    //   spriteSet,
-    // });
-  }, []);
+    setEditedProfile({
+      ...editedProfile,
+      pokemon: editedProfile.pokemon.reduce<Pokemon[]>((acc, item, index) => [
+        ...acc,
+        index === rowIndex ? { ...item, ...pokemon } : item,
+      ], []),
+    });
+  }, [editedProfile]);
 
   const handleSetPokemonSprite = useCallback((rowIndex: number, value: string) => {
-    // setEditedProfile({
-    //   ...editedProfile,
-    //   spriteSet,
-    // });
-  }, []);
+    setEditedProfile({
+      ...editedProfile,
+      pokemon: editedProfile.pokemon.reduce<Pokemon[]>((acc, item, index) => [
+        ...acc,
+        index === rowIndex ? { ...item, sprite: value } : item,
+      ], []),
+    });
+  }, [editedProfile]);
 
   const handleSelectStateOption = useCallback((rowIndex: number, state: TrackerStateDefinition) => {
-    // setEditedProfile({
-    //   ...editedProfile,
-    //   spriteSet,
-    // });
-  }, []);
+    setEditedProfile({
+      ...editedProfile,
+      pokemon: editedProfile.pokemon.reduce<Pokemon[]>((acc, item, index) => [
+        ...acc,
+        index === rowIndex ? { ...item, defaultState: state.name } : item,
+      ], []),
+    });
+  }, [editedProfile]);
 
-  console.log(editedProfile);
+  const handleSaveProfile = useCallback(() => {
+    const normalizedFilename = editedProfile.fileName ?? normalizeFilename(editedProfile.name);
 
+    fs.writeFileSync(
+      path.join(remote.app.getPath('userData'), 'profiles', normalizedFilename), 
+      JSON.stringify({
+        ...editedProfile,
+        fileName: normalizedFilename,
+      }, null, 2),
+    ); 
+    dispatch(saveProfile(editedProfile));
+  }, [profile, editedProfile, dispatch]);
+
+  const handleDeleteProfile = useCallback(async () => {
+    const normalizedFilename = editedProfile.fileName ?? normalizeFilename(editedProfile.name);
+
+    const { response } = await remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+      type: 'warning',
+      message: `Are you sure you wish to delete the profile ${editedProfile.name}? This can't be undone!`,
+      buttons: ['Delete', 'Cancel'],
+      defaultId: 1,
+    });
+
+    if (response === 0) {
+      try {
+        fs.unlinkSync(path.join(remote.app.getPath('userData'), 'profiles', normalizedFilename));
+      } catch (e) {
+        console.log(`Could not delete profile: ${e}`);
+      }
+
+      dispatch(deleteProfile(profile.id));
+      setSelectedProfileName(undefined);
+    }
+
+  }, [profile.id, editedProfile, dispatch]);
+
+  
   const renderStateNameCell = useCallback((rowIndex: number, colIndex: number) => {
     const cellKey = `${rowIndex}-${colIndex}`;
     const validator = validateStateName(rowIndex, colIndex);
@@ -221,12 +276,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
     </Cell>
   ), [editedProfile.states]);
 
-  const renderDexNoCell = useCallback((rowIndex: number) => (
-    <Cell>
-      {editedProfile.pokemon[rowIndex].id}
-    </Cell>
-  ), [editedProfile.pokemon]);
-
   const renderPokemonOptionCell = useCallback((rowIndex: number) => (
     <SelectorCell>
       <PokemonSelector
@@ -239,7 +288,14 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
       >
         <Button
           rightIcon="caret-down"
-          text={editedProfile.pokemon[rowIndex].name ?? "(No selection)"}
+          text={(
+            <>
+              {editedProfile.pokemon[rowIndex].id && (
+                <PokemonNumber>#{editedProfile.pokemon[rowIndex].id}&nbsp;</PokemonNumber>
+              )}
+              {editedProfile.pokemon[rowIndex].name ?? "(No selection)"}
+            </>
+          )}
           fill
         />
       </PokemonSelector>
@@ -324,7 +380,6 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
 
       <FormGroup label="Pokemon">
         <Table numRows={editedProfile.pokemon.length} enableRowReordering>
-          <Column name="Dex No." cellRenderer={renderDexNoCell} />
           <Column name="Name" cellRenderer={renderPokemonOptionCell} />
           <Column name="Sprite URL (optional)" cellRenderer={renderPokemonSpriteCell} />
           <Column name="Default state" cellRenderer={renderDefaultStateCell} />
@@ -336,8 +391,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile }) => {
       </FormGroup>
 
       <ControlGroup>
-        <Button intent="danger">Delete profile</Button>
-        <Button intent="primary">Save profile</Button>
+        <Button intent="danger" onClick={handleDeleteProfile}>Delete profile</Button>
+        <Button intent="primary" onClick={handleSaveProfile}>Save profile</Button>
       </ControlGroup>
     </div>
   )
@@ -392,4 +447,8 @@ const SelectorCell = styled(Cell)`
       box-shadow: none;
     }
   }
+`;
+
+const PokemonNumber = styled.span`
+  color: #666;
 `;

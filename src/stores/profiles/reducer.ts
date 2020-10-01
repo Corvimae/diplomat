@@ -1,8 +1,7 @@
-import { ProfilesState, ProfilesAction, Profile, SAVE_PROFILE } from './types';
-import allGen1 from '../../../assets/profiles/all-gen1.json'; // todo load dynamically
+import { ProfilesState, ProfilesAction, Profile, SAVE_PROFILE, DELETE_PROFILE } from './types';
 
 export const profilesInitialState: ProfilesState = {
-  profiles: [(allGen1 as unknown) as Profile]
+  profiles: []
 };
 
 export function profilesReducer(state = profilesInitialState, action: ProfilesAction): ProfilesState {
@@ -12,8 +11,16 @@ export function profilesReducer(state = profilesInitialState, action: ProfilesAc
         ...state,
         profiles: state.profiles.reduce<Profile[]>((acc, profile) => [
           ...acc,
-          profile === action.payload.oldProfile ? action.payload.newProfile : profile,
+          profile.id === action.payload.profile.id ? action.payload.profile : profile,
         ], []),
+      };
+
+    case DELETE_PROFILE:      
+      return {
+        ...state,
+        profiles: state.profiles.reduce<Profile[]>((acc, profile) => (
+          profile.id === action.payload.profileId ? acc : [...acc, profile]
+        ), []),
       };
 
     default:

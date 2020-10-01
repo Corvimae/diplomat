@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { Tabs, Tab, Button, FormGroup, NumericInput, Classes, ControlGroup, MenuItem } from '@blueprintjs/core';
 import { BlockPicker, ColorResult } from 'react-color';
@@ -15,10 +15,18 @@ const COUNTERS_FONT_FAMILY_HELP_TEXT = 'You may specify more than one font famil
 
 const ProfilePanel = () => {
   const profiles = useTypedSelector(state => state.profiles.profiles);
+  const [selectedProfileName, setSelectedProfileName] = useState<string | undefined>(profiles[0]?.name);
+
+  const selectedProfile = profiles.find(profile => profile.name === selectedProfileName);
 
   return (
     <ProfilePanelContainer>
-      <Tabs vertical renderActiveTabPanelOnly>
+      <Tabs
+        vertical
+        renderActiveTabPanelOnly
+        defaultSelectedTabId={selectedProfileName}
+        onChange={profileName => setSelectedProfileName(profileName as string)}
+      >
         <Button icon={<FontAwesomeIcon icon={faPlus} />}>New profile</Button>
         
         {profiles.map(profile => (
@@ -26,7 +34,9 @@ const ProfilePanel = () => {
         ))}
       </Tabs>
 
-      <ProfileEditor profile={profiles[0]}/>
+      {selectedProfile ? (
+        <ProfileEditor profile={selectedProfile} setSelectedProfileName={setSelectedProfileName}/>
+      ) : 'Please select a profile to edit'}
     </ProfilePanelContainer>
   )
 };

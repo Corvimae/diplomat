@@ -24,7 +24,7 @@ export interface SettingsState {
       height: number;
     };
   };
-  activeProfile: Profile;
+  activeProfile: Profile | undefined;
 }
 
 interface SetCellSizeAction {

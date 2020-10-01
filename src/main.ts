@@ -1,10 +1,12 @@
 import { app, BrowserWindow, dialog } from 'electron';
 import { Rectangle, Event } from 'electron/main';
+
 import pify from 'pify';
 import jsonStorage from 'electron-json-storage';
 import merge from 'deepmerge';
 import configureStore, { RootState, getRootInitialState } from './store';
 import { setCountDimensions, setTrackerDimensions } from './stores/settings/actions';
+import { loadProfiles } from './backend/profiles';
 
 declare var MAIN_WINDOW_WEBPACK_ENTRY: any;
 declare var COUNT_WINDOW_WEBPACK_ENTRY: any;
@@ -54,7 +56,15 @@ const createCountWindow = (parent: BrowserWindow, store: ReturnType<typeof confi
 
 const createWindow = async () => {
   const loadedState = await storage.get('state');
-  const mergedState = merge(getRootInitialState(), loadedState);
+
+  const mergedState = merge(getRootInitialState(), {
+    ...loadedState,
+    profiles: {
+      ...loadedState.profiles,
+      profiles: loadProfiles(app),
+    }
+  });
+
   global.state = {
     ...mergedState,
     tracker: {

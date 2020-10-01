@@ -1,5 +1,4 @@
 import { SettingsAction, SettingsState, SET_CELL_SIZE, SET_TRACKER_DIMENSIONS, SET_COUNT_DIMENSIONS, SET_TRACKER_BACKGROUND_COLOR, SET_COUNT_BACKGROUND_COLOR, SET_FONT_FAMILY } from "./types";
-import defaultActiveProfile from '../../../assets/profiles/all-gen1.json';
 
 export const settingsInitialState: SettingsState = {
   cellSize: 48,
@@ -18,7 +17,7 @@ export const settingsInitialState: SettingsState = {
       height: 75,
     },
   },
-  activeProfile: defaultActiveProfile,
+  activeProfile: undefined,
 };
 
 export function settingsReducer(state = settingsInitialState, action: SettingsAction): SettingsState {

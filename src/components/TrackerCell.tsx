@@ -10,7 +10,7 @@ interface TrackerCellProps {
 
 export const TrackerCell: React.FC<TrackerCellProps> = ({ item }) => {
   const cellSize = useTypedSelector(state => state.settings.cellSize);
-  const spriteSet = useTypedSelector(state => state.settings.activeProfile.spriteSet.path);
+  const spriteSet = useTypedSelector(state => state.settings.activeProfile?.spriteSet.path);
 
   return (
     <Container
